@@ -24,17 +24,33 @@ async def test_project(dut):
     dut.rst_n.value = 1
 
     dut._log.info("Test project behavior")
+    correct = 0
 
-    # Set the input values you want to test
-    dut.ui_in.value = 20
-    dut.uio_in.value = 30
+    for i in range(0,1000):
+        A = coctb.types.LogicArray.from_unsigned(0x00,8)
+        B = coctb.types.LogicArray.from_unsigned(0x00,8)
 
-    # Wait for one clock cycle to see the output values
-    await ClockCycles(dut.clk, 1)
+        for j in range(0,4):
+            A = cocotb.types.LogicArray.from_unsigned((random.random()>0.5)<<(j+4),8) | A;
+            B = cocotb.types.LogicArray.from_unsigned((random.random()>0.5)<<j,8) | B;
+        u_in = A | B;
+        A_int = int(A) >>4;
+        B_int = int(B)
+        P_int = A_int +B_int
+        P = cocotb.types.LogicArray.from_unsigned(0x00,8)
+        P.value = P_int
 
-    # The following assersion is just an example of how to check the output values.
-    # Change it to match the actual expected output of your module:
-    assert dut.uo_out.value == 50
+        # Set the input values you want to test
+        dut.ui_in.value = u_in
 
-    # Keep testing the module by changing the input values, waiting for
-    # one or more clock cycles, and asserting the expected output values.
+        await ClockCycles(dut.clk,3)
+
+        output.value = dut.uo_out.value
+        correct = (P.value == output.value) + correct
+
+        assert (P.value ==output.value)
+
+    fin_out_str = f"{corrrect} out of 1000 tests have succeeded"
+    dut._log.info(fin_out_str)
+
+
